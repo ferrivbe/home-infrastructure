@@ -1,0 +1,153 @@
+name: authside-infrastructure
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-api:
+    name: deploy-api-infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up python3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Test API
+        run: |
+          cd $GITHUB_WORKSPACE
+          touch .env && echo "REGION_NAME=us-east-1\nAPI_HOST=api.domain.com" > .env
+          make venv
+          make test-api
+
+      - name: Build API
+        run: |
+          cd $GITHUB_WORKSPACE/functions/api/src
+          zip -r $GITHUB_WORKSPACE/api-artifact.zip *
+
+      - name: Build API dependencies
+        run: |
+          cd $GITHUB_WORKSPACE/functions/api/src/.dependencies
+          mkdir fastapi && cd fastapi
+          pip3 install -r ../requirements.txt -t python/lib/python3.12/site-packages
+
+      - name: Build FastAPI layer
+        run: |
+          cd $GITHUB_WORKSPACE/functions/api/src/.dependencies/fastapi
+          zip -r $GITHUB_WORKSPACE/fastapi-layer-artifact.zip *
+
+      - name: Set Serverless File
+        run: |
+          echo "move configuration file to the root folder"
+          mv ./.aws/api/serverless.yml $GITHUB_WORKSPACE/serverless.yml
+
+      - name: AWS deployment
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PRD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PRD_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          npm install
+          npx serverless deploy --stage=prd
+
+  deploy-manage-api-services:
+    name: deploy-manage-api-infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up python3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Test Manage API
+        run: |
+          cd $GITHUB_WORKSPACE
+          touch .env && echo "REGION_NAME=us-east-1\nAPI_HOST=api.domain.com" > .env
+          make venv
+          make test-manage-api
+
+      - name: Build API
+        run: |
+          cd $GITHUB_WORKSPACE/functions/manage-api/src
+          zip -r $GITHUB_WORKSPACE/manage-api-artifact.zip *
+
+      - name: Build Manage API dependencies
+        run: |
+          cd $GITHUB_WORKSPACE/functions/manage-api/src/.dependencies
+          mkdir fastapi && cd fastapi
+          pip3 install -r ../requirements.txt -t python/lib/python3.12/site-packages
+
+      - name: Build Manage FastAPI layer
+        run: |
+          cd $GITHUB_WORKSPACE/functions/manage-api/src/.dependencies/fastapi
+          zip -r $GITHUB_WORKSPACE/fastapi-layer-artifact.zip *
+
+      - name: Set Serverless File
+        run: |
+          echo "move configuration file to the root folder"
+          mv ./.aws/manage/serverless.yml $GITHUB_WORKSPACE/serverless.yml
+
+      - name: AWS deployment
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PRD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PRD_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          npm install
+          npx serverless deploy --stage=prd
+
+  deploy-app:
+    name: deploy-app-infrastrucutre
+    runs-on: ubuntu-latest
+    steps:
+      - name: Action checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Set app Configuration File
+        run: |
+          echo "Update this command with current environment file"
+          cp $GITHUB_WORKSPACE/app/src/settings/production.json $GITHUB_WORKSPACE/app/src/settings/config.json
+
+      - name: Build app
+        run: |
+          cd $GITHUB_WORKSPACE/app
+          npm install
+          npm run build
+
+      - name: Prepare Serverless File
+        run: |
+          echo "move configuration file to the root folder"
+          mv ./.aws/app/serverless.yml $GITHUB_WORKSPACE/serverless.yml
+
+      - name: AWS deployment
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PRD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PRD_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          npm install
+          npx serverless deploy --stage=prd
+
+      - name: Upload to S3
+        run: |
+          aws s3 sync ./app/out s3://authside-app-prd-471112718516
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PRD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PRD_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-1"
+
+      - name: Invalidate APP
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id E1NP94ZWLL3MXS \
+            --paths "/*"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PRD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PRD_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-1"
