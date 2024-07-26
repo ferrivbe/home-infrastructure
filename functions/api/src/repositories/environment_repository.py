@@ -23,6 +23,26 @@ class EnvironmentRepository:
         """
         self.environment = os.environ
 
+    def get_database_url(self) -> str:
+        """
+        Retrieves the database URL from an environment variable.
+
+        This method accesses a specific environment variable that stores the database URL
+        using the `_get_environment_variable` method with the `EnvironmentConstants.DATABASE_URL` key.
+
+        Returns:
+            str: The database URL retrieved from the environment variable. If the environment
+                variable is not set, the method behavior (e.g., return value, raising an exception)
+                depends on the implementation of `_get_environment_variable`.
+
+        Note:
+            This method assumes that `_get_environment_variable` is implemented in the class
+            and that `EnvironmentConstants.DATABASE_URL` is a valid key that corresponds to the database
+            environment variable.
+        """
+        return self._get_environment_variable(EnvironmentConstants.DATABASE_URL)
+
+
     def get_api_host(self) -> str:
         """
         Retrieves the API host from an environment variable.

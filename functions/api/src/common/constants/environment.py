@@ -8,6 +8,11 @@ class EnvironmentConstants:
     The API host environment variable.
     """
 
+    DATABASE_URL = "DATABASE_URL"
+    """
+    The DataBase connection string.
+    """
+
     REGION_NAME = "REGION_NAME"
     """
     The service AWS regionname environment variable.

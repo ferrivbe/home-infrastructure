@@ -12,7 +12,10 @@ from src.middleware.exception import (
 from src.middleware.request_extractor import RequestExtractorMiddleware
 from src.middleware.request_logger import RequestLogger
 from src.repositories.environment_repository import EnvironmentRepository
+from src.utils.database import DatabaseManager
 
+db_manager = DatabaseManager()
+db_manager.create_tables()
 environment_repository = EnvironmentRepository()
 
 service_name = "home-infrastructure"
