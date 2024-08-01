@@ -1,8 +1,9 @@
-from src.common.error.http import HTTPError
-from src.controllers.health_controller import HealthController
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from src.common.error.http import HTTPError
+from src.controllers.health_controller import HealthController
+from src.controllers.v1.source_controller import SourceController
 from src.middleware.exception import (
     default_exception_handler,
     exception_handler,
@@ -11,11 +12,12 @@ from src.middleware.exception import (
 )
 from src.middleware.request_extractor import RequestExtractorMiddleware
 from src.middleware.request_logger import RequestLogger
+from src.repositories.data_contracts.model_binder import ModelBinder
 from src.repositories.environment_repository import EnvironmentRepository
-from src.utils.database import DatabaseManager
 
-db_manager = DatabaseManager()
-db_manager.create_tables()
+model_binder = ModelBinder()
+model_binder.create_tables()
+
 environment_repository = EnvironmentRepository()
 
 service_name = "home-infrastructure"
@@ -34,10 +36,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(
-    RequestExtractorMiddleware, api_host=environment_repository.get_api_host()
-)
-
 # Add handlers
 app.add_exception_handler(HTTPError, exception_handler)
 app.add_exception_handler(HTTPException, default_exception_handler)
@@ -46,5 +44,6 @@ app.add_exception_handler(RequestValidationError, request_validation_error_handl
 
 # Add routers or include other routers
 app.include_router(HealthController().router, prefix="/health")
+app.include_router(SourceController().router, prefix="/v1/sources")
 
 handler = FastAPI(app=app)

@@ -1,11 +1,9 @@
 from http import HTTPMethod, HTTPStatus
 
-from src.common.constants.controller import ControllerConstants
 from fastapi import APIRouter
+from src.common.constants.controller import ControllerConstants
 from src.models.health import HealthDto
 from src.models.http_error import HTTPErrorDto
-
-from src.services.source_service import SourceService
 
 
 class HealthController:
@@ -32,7 +30,6 @@ class HealthController:
         request and an `HTTPErrorDto` model in case of an internal server error.
         """
         self.router = APIRouter()
-        self.service = SourceService()
 
         self.router.add_api_route(
             path="",
@@ -63,7 +60,5 @@ class HealthController:
             HealthDto: An instance of `HealthDto` indicating the health status of
             the service, with the `healthy` attribute set to True.
         """
-
-        self.service.get_source(1)
 
         return HealthDto(healthy=True)

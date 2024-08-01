@@ -10,6 +10,9 @@ COMPOSE_FILE = docker-compose.yml
 dev:
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up
 
+dev-api:
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up --build api
+
 # Start the containers
 up:
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up -d

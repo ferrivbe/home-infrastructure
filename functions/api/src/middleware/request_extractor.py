@@ -1,7 +1,7 @@
 import re
 
-from src.common.error.http import HTTPNotFoundError
 from fastapi import Request
+from src.common.error.http import HTTPNotFoundError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
@@ -45,6 +45,9 @@ class RequestExtractorMiddleware(BaseHTTPMiddleware):
             "/service",
             "/docs",
             "/openapi.json",
+            "/sources",
+            "/v1/sources",
+            "/",
         ]
 
     async def dispatch(self, request: Request, call_next):
